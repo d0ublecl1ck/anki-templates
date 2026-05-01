@@ -1,0 +1,68 @@
+<div class="tf-card">
+  <div class="tf-badge">判断题</div>
+
+  <div class="tf-question">{{question}}</div>
+
+  <hr class="tf-divider" id="answer" />
+
+  <div class="tf-result" aria-live="polite"></div>
+
+  <div class="tf-answer-block">
+    <div class="tf-label">正确答案</div>
+    <div class="tf-answer">{{answer}}</div>
+  </div>
+  <div class="tf-answer-raw" hidden>{{answer}}</div>
+
+  {{#note}}
+  <div class="tf-note-block">
+    <div class="tf-label">解析</div>
+    <div class="tf-note">{{note}}</div>
+  </div>
+  {{/note}}
+</div>
+
+<script>
+(() => {
+  const questionText = (document.querySelector(".tf-question")?.textContent || "").trim();
+  const key = `tf-choice:${document.location.pathname}:${questionText}`;
+  const result = document.querySelector(".tf-result");
+  const rawAnswer = (document.querySelector(".tf-answer-raw")?.textContent || "").trim().toLowerCase();
+
+  const normalize = (value) => {
+    if (["true", "t", "1", "yes", "y", "正确", "对"].includes(value)) {
+      return "true";
+    }
+    if (["false", "f", "0", "no", "n", "错误", "错"].includes(value)) {
+      return "false";
+    }
+    return "";
+  };
+
+  const loadChoice = () => {
+    try {
+      return sessionStorage.getItem(key) || window.tfChoice || "";
+    } catch (error) {
+      return window.tfChoice || "";
+    }
+  };
+
+  const choice = normalize(loadChoice());
+  const answer = normalize(rawAnswer);
+
+  if (!choice) {
+    result.className = "tf-result tf-result-neutral";
+    result.textContent = "未记录到你的作答，只显示标准答案。";
+    return;
+  }
+
+  if (!answer) {
+    result.className = "tf-result tf-result-neutral";
+    result.textContent = "答案字段格式无效，请填写 True/False 或 正确/错误。";
+    return;
+  }
+
+  const isCorrect = choice === answer;
+  result.className = `tf-result ${isCorrect ? "tf-result-correct" : "tf-result-wrong"}`;
+  result.textContent = isCorrect ? "回答正确" : `回答错误，你选择了${choice === "true" ? "正确" : "错误"}`;
+})();
+</script>

@@ -1,0 +1,64 @@
+<div class="tf-card">
+  <div class="tf-badge">判断题</div>
+
+  <div class="tf-question">{{question}}</div>
+
+  <div class="tf-actions" role="group" aria-label="选择答案">
+    <button class="tf-btn tf-btn-true" type="button" data-choice="true">正确</button>
+    <button class="tf-btn tf-btn-false" type="button" data-choice="false">错误</button>
+  </div>
+
+  <div class="tf-hint">先作答，再翻面查看结果</div>
+</div>
+
+<script>
+(() => {
+  const questionText = (document.querySelector(".tf-question")?.textContent || "").trim();
+  const key = `tf-choice:${document.location.pathname}:${questionText}`;
+  const buttons = Array.from(document.querySelectorAll(".tf-btn"));
+
+  const paint = (choice) => {
+    buttons.forEach((button) => {
+      button.classList.toggle("is-selected", button.dataset.choice === choice);
+      button.setAttribute("aria-pressed", button.dataset.choice === choice ? "true" : "false");
+    });
+  };
+
+  const save = (choice) => {
+    try {
+      sessionStorage.setItem(key, choice);
+    } catch (error) {
+      window.tfChoice = choice;
+    }
+  };
+
+  const load = () => {
+    try {
+      return sessionStorage.getItem(key) || window.tfChoice || "";
+    } catch (error) {
+      return window.tfChoice || "";
+    }
+  };
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const choice = button.dataset.choice;
+      save(choice);
+      paint(choice);
+    });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "1") {
+      save("true");
+      paint("true");
+    }
+    if (event.key === "0") {
+      save("false");
+      paint("false");
+    }
+  });
+
+  paint(load());
+})();
+</script>
