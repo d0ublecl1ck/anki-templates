@@ -1,0 +1,142 @@
+.card {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 20px;
+  line-height: 1.75;
+  color: #172033;
+  background: #f3f0e8;
+  margin: 0;
+  padding: 24px;
+}
+
+.nightMode .card,
+.card.nightMode {
+  color: #e7ecf5;
+  background: #161b22;
+}
+
+.cloze-shell {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 30px;
+  border: 1px solid #d8d1c2;
+  border-radius: 24px;
+  background: #fffdf8;
+  box-shadow: 0 10px 28px rgba(32, 24, 12, 0.06);
+}
+
+.nightMode .cloze-shell,
+.card.nightMode .cloze-shell {
+  background: #1f2630;
+  border-color: #303846;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+
+.cloze-body {
+  font-size: 1.16em;
+}
+
+.cloze {
+  padding: 0.08em 0.32em;
+  border-radius: 0.4em;
+  background: #fde68a;
+  color: #7c2d12;
+  font-weight: 800;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.nightMode .cloze,
+.card.nightMode .cloze {
+  background: #f59e0b;
+  color: #1f2937;
+}
+
+.cloze-divider {
+  margin: 24px 0 18px;
+  border: 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.cloze-section {
+  margin-top: 8px;
+}
+
+.cloze-label {
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nightMode .cloze-label,
+.card.nightMode .cloze-label {
+  color: #94a3b8;
+}
+
+.cloze-extra {
+  color: inherit;
+  opacity: 0.95;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+}
+
+th,
+td {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  padding: 10px 12px;
+  text-align: left;
+}
+
+blockquote {
+  margin: 16px 0;
+  padding-left: 16px;
+  border-left: 4px solid rgba(59, 130, 246, 0.45);
+  color: inherit;
+}
+
+code {
+  padding: 0.14em 0.35em;
+  border-radius: 6px;
+  background: rgba(148, 163, 184, 0.16);
+  font-size: 0.92em;
+}
+
+pre {
+  overflow-x: auto;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.nightMode pre,
+.card.nightMode pre {
+  background: rgba(15, 23, 42, 0.4);
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 14px;
+    font-size: 18px;
+  }
+
+  .cloze-shell {
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .cloze-body {
+    font-size: 1.06em;
+  }
+}

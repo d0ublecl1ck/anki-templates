@@ -1,0 +1,51 @@
+<div class="input-shell">
+  <div class="input-prompt">{{prompt}}</div>
+
+  <hr class="input-divider" id="answer" />
+
+  <div class="input-result" aria-live="polite"></div>
+
+  <div class="input-section">
+    <div class="input-heading">你的输入</div>
+    <pre class="input-box input-user"></pre>
+  </div>
+
+  <div class="input-section">
+    <div class="input-heading">标准答案</div>
+    <pre class="input-box input-answer">{{answer}}</pre>
+  </div>
+
+  {{#note}}
+  <div class="input-section">
+    <div class="input-heading">解析</div>
+    <div class="input-note">{{note}}</div>
+  </div>
+  {{/note}}
+</div>
+
+<script>
+(() => {
+  const promptText = (document.querySelector(".input-prompt")?.textContent || "").trim();
+  const storageKey = `input-exact:single:${document.location.pathname}:${promptText}`;
+  const answer = document.querySelector(".input-answer")?.textContent ?? "";
+  const result = document.querySelector(".input-result");
+  const userBox = document.querySelector(".input-user");
+
+  const load = () => {
+    try {
+      return sessionStorage.getItem(storageKey) || "";
+    } catch (error) {
+      return window.__inputExactSingleValue || "";
+    }
+  };
+
+  const userValue = load();
+  userBox.textContent = userValue;
+
+  const matched = userValue === answer;
+  result.className = `input-result ${matched ? "is-correct" : "is-wrong"}`;
+  result.textContent = matched
+    ? "完全匹配"
+    : "不匹配。大小写、空格、标点都必须完全一致。";
+})();
+</script>

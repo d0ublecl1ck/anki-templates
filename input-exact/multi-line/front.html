@@ -1,0 +1,80 @@
+<div class="input-shell">
+  <div class="input-prompt">{{prompt}}</div>
+  <div class="input-answer-raw" hidden>{{answer}}</div>
+  <div class="input-feedback-raw" hidden>{{feedback}}</div>
+
+  <label class="input-label" for="exact-textarea">输入答案</label>
+  <textarea id="exact-textarea" class="exact-input exact-input-multi" spellcheck="false"></textarea>
+
+  <div class="input-diff-panel" hidden>
+    <div class="input-heading">即时差异提示</div>
+    <pre class="input-box input-diff"></pre>
+  </div>
+</div>
+
+<script>
+(() => {
+  const promptText = (document.querySelector(".input-prompt")?.textContent || "").trim();
+  const storageKey = `input-exact:multi:${document.location.pathname}:${promptText}`;
+  const input = document.getElementById("exact-textarea");
+  const answer = document.querySelector(".input-answer-raw")?.textContent ?? "";
+  const feedbackRaw = (document.querySelector(".input-feedback-raw")?.textContent || "").trim().toLowerCase();
+  const diffPanel = document.querySelector(".input-diff-panel");
+  const diffBox = document.querySelector(".input-diff");
+  const feedbackEnabled = ["1", "true", "yes", "on", "开启", "即时"].includes(feedbackRaw);
+
+  const escapeHtml = (value) =>
+    value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+
+  const renderDiff = (userValue) => {
+    if (!feedbackEnabled) {
+      return;
+    }
+
+    const maxLen = Math.max(userValue.length, answer.length);
+    let html = "";
+    for (let idx = 0; idx < maxLen; idx += 1) {
+      const userChar = userValue[idx] ?? "";
+      const answerChar = answer[idx] ?? "";
+      const shown = userChar || "·";
+      if (userChar === answerChar) {
+        html += escapeHtml(shown);
+      } else {
+        html += `<span class="diff-char">${escapeHtml(shown)}</span>`;
+      }
+    }
+    diffBox.innerHTML = html;
+  };
+
+  const load = () => {
+    try {
+      return sessionStorage.getItem(storageKey) || "";
+    } catch (error) {
+      return window.__inputExactMultiValue || "";
+    }
+  };
+
+  const save = (value) => {
+    try {
+      sessionStorage.setItem(storageKey, value);
+    } catch (error) {
+      window.__inputExactMultiValue = value;
+    }
+  };
+
+  input.value = load();
+  if (feedbackEnabled) {
+    diffPanel.hidden = false;
+    renderDiff(input.value);
+  }
+  input.addEventListener("input", () => {
+    save(input.value);
+    renderDiff(input.value);
+  });
+  input.focus();
+})();
+</script>

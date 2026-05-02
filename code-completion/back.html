@@ -1,0 +1,92 @@
+<div class="code-shell">
+  <div class="code-prompt">{{prompt}}</div>
+  <div class="code-raw" hidden>{{code}}</div>
+  <div class="answers-raw" hidden>{{answers}}</div>
+  <div class="language-raw" hidden>{{language}}</div>
+
+  <div class="result-summary"></div>
+
+  <pre class="code-frame"><code id="answer-code-block"></code></pre>
+
+  <div class="section">
+    <div class="section-title">逐空结果</div>
+    <div class="result-list"></div>
+  </div>
+
+  {{#note}}
+  <div class="section">
+    <div class="section-title">解析</div>
+    <div class="code-note">{{note}}</div>
+  </div>
+  {{/note}}
+</div>
+
+<script>
+(() => {
+  const promptText = (document.querySelector(".code-prompt")?.textContent || "").trim();
+  const codeRaw = document.querySelector(".code-raw")?.textContent ?? "";
+  const answersRaw = document.querySelector(".answers-raw")?.textContent ?? "";
+  const languageRaw = (document.querySelector(".language-raw")?.textContent || "").trim().toLowerCase();
+  const codeBlock = document.getElementById("answer-code-block");
+  const resultSummary = document.querySelector(".result-summary");
+  const resultList = document.querySelector(".result-list");
+  const answers = answersRaw.split(/\r?\n/);
+  const placeholderPattern = /\[\[(\d+)\]\]/g;
+
+  const escapeHtml = (value) =>
+    value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+
+  const values = window.__codeCompletionValues || {};
+  const items = answers.map((answer, idx) => {
+    const ord = String(idx + 1);
+    const userValue = values[ord] || "";
+    const matched = userValue === answer;
+    return { ord, userValue, answer, matched };
+  });
+
+  const correctCount = items.filter((item) => item.matched).length;
+  resultSummary.className = `result-summary ${correctCount === items.length ? "is-correct" : "is-wrong"}`;
+  resultSummary.textContent =
+    correctCount === items.length
+      ? `全部匹配，共 ${items.length} 处。`
+      : `匹配 ${correctCount} / ${items.length} 处。要求逐字符完全一致。`;
+
+  resultList.innerHTML = items
+    .map(
+      (item) => `
+        <div class="result-item ${item.matched ? "is-correct" : "is-wrong"}">
+          <div class="result-label">空 ${item.ord}</div>
+          <div class="result-row"><span>你的输入：</span><pre class="result-code">${escapeHtml(item.userValue)}</pre></div>
+          <div class="result-row"><span>标准答案：</span><pre class="result-code">${escapeHtml(item.answer)}</pre></div>
+        </div>
+      `
+    )
+    .join("");
+
+  codeBlock.innerHTML = escapeHtml(
+    codeRaw.replace(placeholderPattern, (_, ord) => answers[Number(ord) - 1] ?? "")
+  );
+
+  if (languageRaw) {
+    codeBlock.classList.add(`language-${languageRaw}`);
+    const prismTheme = document.createElement("link");
+    prismTheme.rel = "stylesheet";
+    prismTheme.href = "https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css";
+    document.head.appendChild(prismTheme);
+
+    const prismCore = document.createElement("script");
+    prismCore.src = "https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js";
+    prismCore.onload = () => {
+      const prismAutoloader = document.createElement("script");
+      prismAutoloader.src = "https://cdn.jsdelivr.net/npm/prismjs@1/plugins/autoloader/prism-autoloader.min.js";
+      prismAutoloader.onload = () => window.Prism?.highlightElement(codeBlock);
+      document.head.appendChild(prismAutoloader);
+    };
+    document.head.appendChild(prismCore);
+  }
+})();
+</script>

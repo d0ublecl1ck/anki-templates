@@ -1,0 +1,163 @@
+<div class="code-shell">
+  <div class="toolbar">
+    <button type="button" class="toggle-feedback" aria-pressed="false" title="切换即时差异提示"></button>
+  </div>
+
+  <div class="code-prompt">{{prompt}}</div>
+  <div class="code-raw" hidden>{{code}}</div>
+  <div class="answers-raw" hidden>{{answers}}</div>
+  <div class="language-raw" hidden>{{language}}</div>
+
+  <pre class="code-frame"><code id="code-block"></code></pre>
+
+  <div class="diff-panel" hidden>
+    <div class="section-title">即时差异提示</div>
+    <div class="diff-list"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const promptText = (document.querySelector(".code-prompt")?.textContent || "").trim();
+  const codeRaw = document.querySelector(".code-raw")?.textContent ?? "";
+  const answersRaw = document.querySelector(".answers-raw")?.textContent ?? "";
+  const languageRaw = (document.querySelector(".language-raw")?.textContent || "").trim().toLowerCase();
+  const codeBlock = document.getElementById("code-block");
+  const diffPanel = document.querySelector(".diff-panel");
+  const diffList = document.querySelector(".diff-list");
+  const toggleButton = document.querySelector(".toggle-feedback");
+  const answers = answersRaw.split(/\r?\n/);
+  const placeholderPattern = /\[\[(\d+)\]\]/g;
+  const globalFeedbackKey = "anki-template:code-completion:instant-diff";
+
+  const escapeHtml = (value) =>
+    value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+
+  const keywordMap = {
+    python: ["def", "return", "if", "elif", "else", "for", "while", "in", "import", "from", "class", "try", "except", "with", "as", "pass", "break", "continue", "lambda", "yield", "None", "True", "False"],
+    javascript: ["function", "return", "if", "else", "for", "while", "const", "let", "var", "class", "new", "import", "from", "export", "default", "try", "catch", "finally", "async", "await", "true", "false", "null", "undefined"],
+    typescript: ["function", "return", "if", "else", "for", "while", "const", "let", "var", "class", "new", "import", "from", "export", "default", "try", "catch", "finally", "async", "await", "interface", "type", "extends", "implements", "public", "private", "protected", "readonly"],
+    java: ["class", "public", "private", "protected", "static", "void", "return", "if", "else", "for", "while", "new", "import", "package", "try", "catch", "finally", "true", "false", "null"],
+    cpp: ["int", "long", "double", "float", "bool", "void", "return", "if", "else", "for", "while", "class", "struct", "public", "private", "protected", "include", "using", "namespace", "true", "false", "nullptr"],
+    c: ["int", "long", "double", "float", "char", "void", "return", "if", "else", "for", "while", "struct", "include", "true", "false", "NULL"],
+    go: ["func", "return", "if", "else", "for", "range", "package", "import", "type", "struct", "interface", "go", "defer", "select", "case", "switch", "var", "const", "true", "false", "nil"],
+    rust: ["fn", "let", "mut", "pub", "impl", "struct", "enum", "trait", "return", "if", "else", "for", "while", "loop", "match", "use", "mod", "crate", "true", "false", "None", "Some"],
+  };
+
+  const isFeedbackEnabled = () => {
+    try {
+      return localStorage.getItem(globalFeedbackKey) === "on";
+    } catch (error) {
+      return window.__codeCompletionFeedbackEnabled === true;
+    }
+  };
+
+  const setFeedbackEnabled = (enabled) => {
+    try {
+      localStorage.setItem(globalFeedbackKey, enabled ? "on" : "off");
+    } catch (error) {
+      window.__codeCompletionFeedbackEnabled = enabled;
+    }
+  };
+
+  const syncToggleUi = () => {
+    const enabled = isFeedbackEnabled();
+    toggleButton.textContent = enabled ? "提示开" : "提示关";
+    toggleButton.setAttribute("aria-pressed", enabled ? "true" : "false");
+    diffPanel.hidden = !enabled;
+    if (enabled) {
+      renderDiffPanel(window.__codeCompletionValues);
+    }
+  };
+
+  const highlightPlainSegment = (rawText) => {
+    const keywords = keywordMap[languageRaw] || [];
+    if (!keywords.length) {
+      return escapeHtml(rawText);
+    }
+
+    const pieces = rawText.split(/(\b)/);
+    return pieces
+      .map((piece) => {
+        if (keywords.includes(piece)) {
+          return `<span class="token-keyword">${escapeHtml(piece)}</span>`;
+        }
+        return escapeHtml(piece);
+      })
+      .join("");
+  };
+
+  window.__codeCompletionValues = {};
+
+  const renderDiffCharLine = (userValue, answerValue) => {
+    const maxLen = Math.max(userValue.length, answerValue.length);
+    let html = "";
+    for (let idx = 0; idx < maxLen; idx += 1) {
+      const userChar = userValue[idx] ?? "";
+      const answerChar = answerValue[idx] ?? "";
+      const shown = userChar || "·";
+      if (userChar === answerChar) {
+        html += escapeHtml(shown);
+      } else {
+        html += `<span class="diff-char">${escapeHtml(shown)}</span>`;
+      }
+    }
+    return html || "·";
+  };
+
+  const renderDiffPanel = (values) => {
+    if (!isFeedbackEnabled()) {
+      return;
+    }
+    const items = answers.map((answer, idx) => {
+      const userValue = values[String(idx + 1)] || "";
+      return `
+        <div class="diff-item">
+          <div class="diff-label">空 ${idx + 1}</div>
+          <pre class="diff-value">${renderDiffCharLine(userValue, answer)}</pre>
+        </div>
+      `;
+    });
+    diffList.innerHTML = items.join("");
+  };
+
+  const initialValues = window.__codeCompletionValues;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+  while ((match = placeholderPattern.exec(codeRaw)) !== null) {
+    parts.push(highlightPlainSegment(codeRaw.slice(lastIndex, match.index)));
+    const ord = match[1];
+    const expected = answers[Number(ord) - 1] ?? "";
+    const current = initialValues[ord] || "";
+    const width = Math.max(expected.length, 4) + 1;
+    parts.push(
+      `<input class="blank-input" data-ord="${ord}" value="${escapeHtml(current)}" spellcheck="false" style="width:${width}ch" />`
+    );
+    lastIndex = match.index + match[0].length;
+  }
+  parts.push(highlightPlainSegment(codeRaw.slice(lastIndex)));
+  codeBlock.innerHTML = parts.join("");
+
+  const inputs = Array.from(document.querySelectorAll(".blank-input"));
+  syncToggleUi();
+
+  inputs.forEach((input) => {
+    input.addEventListener("input", () => {
+      window.__codeCompletionValues[input.dataset.ord] = input.value;
+      renderDiffPanel(window.__codeCompletionValues);
+    });
+  });
+
+  toggleButton.addEventListener("click", () => {
+    setFeedbackEnabled(!isFeedbackEnabled());
+    syncToggleUi();
+  });
+
+  inputs[0]?.focus();
+})();
+</script>
