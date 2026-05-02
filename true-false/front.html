@@ -16,6 +16,7 @@
   const questionText = (document.querySelector(".tf-question")?.textContent || "").trim();
   const key = `tf-choice:${document.location.pathname}:${questionText}`;
   const buttons = Array.from(document.querySelectorAll(".tf-btn"));
+  const fallbackStore = (window.__tfChoiceStore = window.__tfChoiceStore || {});
 
   const paint = (choice) => {
     buttons.forEach((button) => {
@@ -28,15 +29,15 @@
     try {
       sessionStorage.setItem(key, choice);
     } catch (error) {
-      window.tfChoice = choice;
+      fallbackStore[key] = choice;
     }
   };
 
   const load = () => {
     try {
-      return sessionStorage.getItem(key) || window.tfChoice || "";
+      return sessionStorage.getItem(key) || fallbackStore[key] || "";
     } catch (error) {
-      return window.tfChoice || "";
+      return fallbackStore[key] || "";
     }
   };
 
@@ -59,6 +60,6 @@
     }
   });
 
-  paint(load());
+  paint("");
 })();
 </script>

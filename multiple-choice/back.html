@@ -1,0 +1,116 @@
+<div class="mc-card">
+  <div class="mc-badge">多选题</div>
+
+  <div class="mc-question">{{question}}</div>
+
+  <div class="mc-options-raw" hidden>{{options}}</div>
+  <div class="mc-answer-raw" hidden>{{answer}}</div>
+
+  <hr class="mc-divider" id="answer" />
+
+  <div class="mc-result" aria-live="polite"></div>
+  <div class="mc-summary"></div>
+
+  {{#note}}
+  <div class="mc-note-block">
+    <div class="mc-label">解析</div>
+    <div class="mc-note">{{note}}</div>
+  </div>
+  {{/note}}
+</div>
+
+<script>
+(() => {
+  const questionText = (document.querySelector(".mc-question")?.textContent || "").trim();
+  const key = `multiple-choice:${document.location.pathname}:${questionText}`;
+  const rawOptions = (document.querySelector(".mc-options-raw")?.textContent || "").trim();
+  const rawAnswer = (document.querySelector(".mc-answer-raw")?.textContent || "").trim();
+  const result = document.querySelector(".mc-result");
+  const summary = document.querySelector(".mc-summary");
+
+  const parseOptions = (value) =>
+    value
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line, index) => {
+        const matched = line.match(/^([A-Za-z])[\.\)\:\-、\s]+(.+)$/);
+        if (matched) {
+          return { label: matched[1].toUpperCase(), text: matched[2].trim(), index };
+        }
+        return {
+          label: String.fromCharCode(65 + index),
+          text: line,
+          index,
+        };
+      });
+
+  const options = parseOptions(rawOptions);
+
+  const normalizeChoices = (value) => {
+    const tokens = value
+      .toUpperCase()
+      .split(/[\s,，;；/|]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const mapped = tokens
+      .map((token) => {
+        if (/^\d+$/.test(token)) {
+          return options[Number.parseInt(token, 10) - 1]?.label || "";
+        }
+        return token;
+      })
+      .filter(Boolean);
+    return options.map((option) => option.label).filter((label) => mapped.includes(label));
+  };
+
+  const loadChoice = () => {
+    try {
+      return sessionStorage.getItem(key) || window.multipleChoiceValue || "";
+    } catch (error) {
+      return window.multipleChoiceValue || "";
+    }
+  };
+
+  const answerChoices = normalizeChoices(rawAnswer);
+  const userChoices = normalizeChoices(loadChoice());
+
+  const formatChoice = (label) => {
+    const option = options.find((item) => item.label === label);
+    return option ? `${option.label}. ${option.text}` : label;
+  };
+
+  if (!answerChoices.length) {
+    result.className = "mc-result mc-result-neutral";
+    result.textContent = "答案字段格式无效，请填写 A C 或 1,3。";
+    return;
+  }
+
+  summary.innerHTML = `
+    <div class="mc-summary-row">
+      <span class="mc-label">标准答案</span>
+      <span>${answerChoices.map(formatChoice).join(" / ")}</span>
+    </div>
+  `;
+
+  if (!userChoices.length) {
+    result.className = "mc-result mc-result-neutral";
+    result.textContent = "未记录到你的作答。";
+    return;
+  }
+
+  const isCorrect =
+    userChoices.length === answerChoices.length &&
+    userChoices.every((label, index) => label === answerChoices[index]);
+
+  result.className = `mc-result ${isCorrect ? "mc-result-correct" : "mc-result-wrong"}`;
+  result.textContent = isCorrect ? "回答正确" : "回答错误";
+
+  summary.innerHTML += `
+    <div class="mc-summary-row">
+      <span class="mc-label">你的选择</span>
+      <span>${userChoices.map(formatChoice).join(" / ")}</span>
+    </div>
+  `;
+})();
+</script>

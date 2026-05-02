@@ -1,0 +1,114 @@
+<div class="mc-card">
+  <div class="mc-badge">多选题</div>
+
+  <div class="mc-question">{{question}}</div>
+
+  <div class="mc-options-raw" hidden>{{options}}</div>
+
+  <div class="mc-options" role="group" aria-label="可多选答案"></div>
+
+  <div class="mc-status">尚未选择</div>
+  <div class="mc-hint">点击选项或按数字键 1-9 切换选择，再翻面查看结果</div>
+</div>
+
+<script>
+(() => {
+  const questionText = (document.querySelector(".mc-question")?.textContent || "").trim();
+  const key = `multiple-choice:${document.location.pathname}:${questionText}`;
+  const rawOptions = (document.querySelector(".mc-options-raw")?.textContent || "").trim();
+  const root = document.querySelector(".mc-options");
+  const status = document.querySelector(".mc-status");
+
+  const parseOptions = (value) =>
+    value
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line, index) => {
+        const matched = line.match(/^([A-Za-z])[\.\)\:\-、\s]+(.+)$/);
+        if (matched) {
+          return { label: matched[1].toUpperCase(), text: matched[2].trim(), index };
+        }
+        return {
+          label: String.fromCharCode(65 + index),
+          text: line,
+          index,
+        };
+      });
+
+  const options = parseOptions(rawOptions);
+
+  const save = (choices) => {
+    const value = choices.join(",");
+    try {
+      sessionStorage.setItem(key, value);
+    } catch (error) {
+      window.multipleChoiceValue = value;
+    }
+  };
+
+  const load = () => {
+    try {
+      return sessionStorage.getItem(key) || window.multipleChoiceValue || "";
+    } catch (error) {
+      return window.multipleChoiceValue || "";
+    }
+  };
+
+  const parseStored = (value) =>
+    value
+      .split(",")
+      .map((item) => item.trim().toUpperCase())
+      .filter(Boolean);
+
+  const paint = (choices) => {
+    const choiceSet = new Set(choices);
+    Array.from(root.querySelectorAll(".mc-option")).forEach((button) => {
+      const checked = choiceSet.has(button.dataset.choice || "");
+      button.classList.toggle("is-selected", checked);
+      button.setAttribute("aria-pressed", checked ? "true" : "false");
+    });
+    status.textContent = choices.length ? `已选 ${choices.join("、")}` : "尚未选择";
+  };
+
+  const toggle = (choice) => {
+    const current = parseStored(load());
+    const next = current.includes(choice) ? current.filter((item) => item !== choice) : [...current, choice];
+    const ordered = options.map((option) => option.label).filter((label) => next.includes(label));
+    save(ordered);
+    paint(ordered);
+  };
+
+  root.innerHTML = options
+    .map(
+      (option) => `
+        <button
+          class="mc-option"
+          type="button"
+          data-choice="${option.label}"
+          aria-pressed="false"
+        >
+          <span class="mc-option-label">${option.label}</span>
+          <span class="mc-option-text">${option.text}</span>
+        </button>
+      `
+    )
+    .join("");
+
+  Array.from(root.querySelectorAll(".mc-option")).forEach((button) => {
+    button.addEventListener("click", () => {
+      toggle(button.dataset.choice || "");
+    });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const index = Number.parseInt(event.key, 10) - 1;
+    if (Number.isNaN(index) || index < 0 || index >= options.length) {
+      return;
+    }
+    toggle(options[index].label);
+  });
+
+  paint(parseStored(load()));
+})();
+</script>

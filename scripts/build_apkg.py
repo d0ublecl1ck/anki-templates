@@ -82,6 +82,74 @@ def package_true_false() -> None:
     genanki.Package(deck).write_to_file(str(DIST / "判断题.apkg"))
 
 
+def package_single_choice() -> None:
+    folder = ROOT / "single-choice"
+    deck = genanki.Deck(stable_id(1007), "中文::单选题")
+    model = genanki.Model(
+        stable_id(2007),
+        "单选题",
+        fields=[
+            {"name": "question"},
+            {"name": "options"},
+            {"name": "answer"},
+            {"name": "note"},
+        ],
+        templates=[
+            {
+                "name": "卡片 1",
+                "qfmt": read_text(folder / "front.html"),
+                "afmt": read_text(folder / "back.html"),
+            }
+        ],
+        css=read_text(folder / "style.css"),
+    )
+    note = genanki.Note(
+        model=model,
+        fields=[
+            "以下哪一个是 Python 的内置可变序列类型？",
+            "A. tuple\nB. list\nC. str\nD. frozenset",
+            "B",
+            "`list` 是可变序列。",
+        ],
+    )
+    deck.add_note(note)
+    genanki.Package(deck).write_to_file(str(DIST / "单选题.apkg"))
+
+
+def package_multiple_choice() -> None:
+    folder = ROOT / "multiple-choice"
+    deck = genanki.Deck(stable_id(1008), "中文::多选题")
+    model = genanki.Model(
+        stable_id(2008),
+        "多选题",
+        fields=[
+            {"name": "question"},
+            {"name": "options"},
+            {"name": "answer"},
+            {"name": "note"},
+        ],
+        templates=[
+            {
+                "name": "卡片 1",
+                "qfmt": read_text(folder / "front.html"),
+                "afmt": read_text(folder / "back.html"),
+            }
+        ],
+        css=read_text(folder / "style.css"),
+    )
+    note = genanki.Note(
+        model=model,
+        fields=[
+            "下面哪些属于传输层协议？",
+            "A. TCP\nB. UDP\nC. HTTP\nD. IP",
+            "A,B",
+            "`TCP` 和 `UDP` 属于传输层。",
+        ],
+    )
+    deck.add_note(note)
+    genanki.Package(deck).write_to_file(str(DIST / "多选题.apkg"))
+
+
 def package_cloze() -> None:
     folder = ROOT / "cloze-enhanced"
     deck = genanki.Deck(stable_id(1003), "中文::挖空卡（简洁版）")
@@ -220,6 +288,8 @@ def package_code_completion() -> None:
 def main() -> None:
     package_basic()
     package_true_false()
+    package_single_choice()
+    package_multiple_choice()
     package_cloze()
     package_input_single()
     package_input_multi()

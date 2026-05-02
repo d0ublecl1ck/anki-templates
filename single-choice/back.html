@@ -1,0 +1,105 @@
+<div class="choice-card">
+  <div class="choice-badge">单选题</div>
+
+  <div class="choice-question">{{question}}</div>
+
+  <div class="choice-options-raw" hidden>{{options}}</div>
+  <div class="choice-answer-raw" hidden>{{answer}}</div>
+
+  <hr class="choice-divider" id="answer" />
+
+  <div class="choice-result" aria-live="polite"></div>
+  <div class="choice-summary"></div>
+
+  {{#note}}
+  <div class="choice-note-block">
+    <div class="choice-label">解析</div>
+    <div class="choice-note">{{note}}</div>
+  </div>
+  {{/note}}
+</div>
+
+<script>
+(() => {
+  const questionText = (document.querySelector(".choice-question")?.textContent || "").trim();
+  const key = `single-choice:${document.location.pathname}:${questionText}`;
+  const rawOptions = (document.querySelector(".choice-options-raw")?.textContent || "").trim();
+  const rawAnswer = (document.querySelector(".choice-answer-raw")?.textContent || "").trim();
+  const result = document.querySelector(".choice-result");
+  const summary = document.querySelector(".choice-summary");
+
+  const parseOptions = (value) =>
+    value
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line, index) => {
+        const matched = line.match(/^([A-Za-z])[\.\)\:\-、\s]+(.+)$/);
+        if (matched) {
+          return { label: matched[1].toUpperCase(), text: matched[2].trim(), index };
+        }
+        return {
+          label: String.fromCharCode(65 + index),
+          text: line,
+          index,
+        };
+      });
+
+  const options = parseOptions(rawOptions);
+
+  const loadChoice = () => {
+    try {
+      return sessionStorage.getItem(key) || window.singleChoiceValue || "";
+    } catch (error) {
+      return window.singleChoiceValue || "";
+    }
+  };
+
+  const normalizeChoice = (value) => {
+    const normalized = value.trim().toUpperCase();
+    if (!normalized) {
+      return "";
+    }
+    if (/^\d+$/.test(normalized)) {
+      const index = Number.parseInt(normalized, 10) - 1;
+      return options[index]?.label || "";
+    }
+    return normalized;
+  };
+
+  const choice = normalizeChoice(loadChoice());
+  const answer = normalizeChoice(rawAnswer);
+  const answerOption = options.find((option) => option.label === answer);
+  const choiceOption = options.find((option) => option.label === choice);
+
+  if (!answerOption) {
+    result.className = "choice-result choice-result-neutral";
+    result.textContent = "答案字段格式无效，请填写 A/B/C 或 1/2/3。";
+    return;
+  }
+
+  summary.innerHTML = `
+    <div class="choice-summary-row">
+      <span class="choice-label">标准答案</span>
+      <span>${answerOption.label}. ${answerOption.text}</span>
+    </div>
+  `;
+
+  if (!choiceOption) {
+    result.className = "choice-result choice-result-neutral";
+    result.textContent = "未记录到你的作答。";
+    return;
+  }
+
+  const isCorrect = choice === answer;
+  result.className = `choice-result ${isCorrect ? "choice-result-correct" : "choice-result-wrong"}`;
+  result.textContent = isCorrect ? "回答正确" : "回答错误";
+
+  summary.innerHTML += `
+    <div class="choice-summary-row">
+      <span class="choice-label">你的选择</span>
+      <span>${choiceOption.label}. ${choiceOption.text}</span>
+    </div>
+  `;
+})();
+</script>

@@ -1,0 +1,100 @@
+<div class="choice-card">
+  <div class="choice-badge">单选题</div>
+
+  <div class="choice-question">{{question}}</div>
+
+  <div class="choice-options-raw" hidden>{{options}}</div>
+
+  <div class="choice-options" role="radiogroup" aria-label="选择一个答案"></div>
+
+  <div class="choice-hint">点击选项或按数字键 1-9 作答，再翻面查看结果</div>
+</div>
+
+<script>
+(() => {
+  const questionText = (document.querySelector(".choice-question")?.textContent || "").trim();
+  const key = `single-choice:${document.location.pathname}:${questionText}`;
+  const rawOptions = (document.querySelector(".choice-options-raw")?.textContent || "").trim();
+  const root = document.querySelector(".choice-options");
+
+  const parseOptions = (value) =>
+    value
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line, index) => {
+        const matched = line.match(/^([A-Za-z])[\.\)\:\-、\s]+(.+)$/);
+        if (matched) {
+          return { label: matched[1].toUpperCase(), text: matched[2].trim(), index };
+        }
+        return {
+          label: String.fromCharCode(65 + index),
+          text: line,
+          index,
+        };
+      });
+
+  const options = parseOptions(rawOptions);
+
+  const save = (choice) => {
+    try {
+      sessionStorage.setItem(key, choice);
+    } catch (error) {
+      window.singleChoiceValue = choice;
+    }
+  };
+
+  const load = () => {
+    try {
+      return sessionStorage.getItem(key) || window.singleChoiceValue || "";
+    } catch (error) {
+      return window.singleChoiceValue || "";
+    }
+  };
+
+  const paint = (choice) => {
+    Array.from(root.querySelectorAll(".choice-option")).forEach((button) => {
+      const checked = button.dataset.choice === choice;
+      button.classList.toggle("is-selected", checked);
+      button.setAttribute("aria-checked", checked ? "true" : "false");
+    });
+  };
+
+  root.innerHTML = options
+    .map(
+      (option) => `
+        <button
+          class="choice-option"
+          type="button"
+          role="radio"
+          aria-checked="false"
+          data-choice="${option.label}"
+        >
+          <span class="choice-option-label">${option.label}</span>
+          <span class="choice-option-text">${option.text}</span>
+        </button>
+      `
+    )
+    .join("");
+
+  Array.from(root.querySelectorAll(".choice-option")).forEach((button) => {
+    button.addEventListener("click", () => {
+      const choice = button.dataset.choice || "";
+      save(choice);
+      paint(choice);
+    });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const index = Number.parseInt(event.key, 10) - 1;
+    if (Number.isNaN(index) || index < 0 || index >= options.length) {
+      return;
+    }
+    const choice = options[index].label;
+    save(choice);
+    paint(choice);
+  });
+
+  paint(load());
+})();
+</script>

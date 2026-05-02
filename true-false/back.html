@@ -22,6 +22,7 @@
   const key = `tf-choice:${document.location.pathname}:${questionText}`;
   const result = document.querySelector(".tf-result");
   const rawAnswer = (document.querySelector(".tf-answer-raw")?.textContent || "").trim().toLowerCase();
+  const fallbackStore = (window.__tfChoiceStore = window.__tfChoiceStore || {});
 
   const normalize = (value) => {
     if (["true", "t", "1", "yes", "y", "正确", "对"].includes(value)) {
@@ -35,9 +36,14 @@
 
   const loadChoice = () => {
     try {
-      return sessionStorage.getItem(key) || window.tfChoice || "";
+      const value = sessionStorage.getItem(key) || fallbackStore[key] || "";
+      sessionStorage.removeItem(key);
+      delete fallbackStore[key];
+      return value;
     } catch (error) {
-      return window.tfChoice || "";
+      const value = fallbackStore[key] || "";
+      delete fallbackStore[key];
+      return value;
     }
   };
 
