@@ -18,6 +18,7 @@
   const rawOptions = (document.querySelector(".mc-options-raw")?.textContent || "").trim();
   const root = document.querySelector(".mc-options");
   const status = document.querySelector(".mc-status");
+  const fallbackStore = (window.__multipleChoiceStore = window.__multipleChoiceStore || {});
 
   const parseOptions = (value) =>
     value
@@ -36,22 +37,32 @@
         };
       });
 
-  const options = parseOptions(rawOptions);
+  const shuffle = (items) => {
+    const copy = [...items];
+    for (let idx = copy.length - 1; idx > 0; idx -= 1) {
+      const swapIndex = Math.floor(Math.random() * (idx + 1));
+      [copy[idx], copy[swapIndex]] = [copy[swapIndex], copy[idx]];
+    }
+    return copy;
+  };
+
+  const baseOptions = parseOptions(rawOptions);
+  const displayedOptions = shuffle(baseOptions);
 
   const save = (choices) => {
     const value = choices.join(",");
     try {
       sessionStorage.setItem(key, value);
     } catch (error) {
-      window.multipleChoiceValue = value;
+      fallbackStore[key] = value;
     }
   };
 
   const load = () => {
     try {
-      return sessionStorage.getItem(key) || window.multipleChoiceValue || "";
+      return sessionStorage.getItem(key) || fallbackStore[key] || "";
     } catch (error) {
-      return window.multipleChoiceValue || "";
+      return fallbackStore[key] || "";
     }
   };
 
@@ -74,12 +85,12 @@
   const toggle = (choice) => {
     const current = parseStored(load());
     const next = current.includes(choice) ? current.filter((item) => item !== choice) : [...current, choice];
-    const ordered = options.map((option) => option.label).filter((label) => next.includes(label));
+    const ordered = baseOptions.map((option) => option.label).filter((label) => next.includes(label));
     save(ordered);
     paint(ordered);
   };
 
-  root.innerHTML = options
+  root.innerHTML = displayedOptions
     .map(
       (option) => `
         <button
@@ -103,10 +114,10 @@
 
   document.addEventListener("keydown", (event) => {
     const index = Number.parseInt(event.key, 10) - 1;
-    if (Number.isNaN(index) || index < 0 || index >= options.length) {
+    if (Number.isNaN(index) || index < 0 || index >= displayedOptions.length) {
       return;
     }
-    toggle(options[index].label);
+    toggle(displayedOptions[index].label);
   });
 
   paint(parseStored(load()));

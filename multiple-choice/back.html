@@ -27,6 +27,7 @@
   const rawAnswer = (document.querySelector(".mc-answer-raw")?.textContent || "").trim();
   const result = document.querySelector(".mc-result");
   const summary = document.querySelector(".mc-summary");
+  const fallbackStore = (window.__multipleChoiceStore = window.__multipleChoiceStore || {});
 
   const parseOptions = (value) =>
     value
@@ -66,9 +67,14 @@
 
   const loadChoice = () => {
     try {
-      return sessionStorage.getItem(key) || window.multipleChoiceValue || "";
+      const value = sessionStorage.getItem(key) || fallbackStore[key] || "";
+      sessionStorage.removeItem(key);
+      delete fallbackStore[key];
+      return value;
     } catch (error) {
-      return window.multipleChoiceValue || "";
+      const value = fallbackStore[key] || "";
+      delete fallbackStore[key];
+      return value;
     }
   };
 

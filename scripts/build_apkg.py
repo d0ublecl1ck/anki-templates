@@ -181,6 +181,37 @@ def package_cloze() -> None:
     genanki.Package(deck).write_to_file(str(DIST / "挖空卡-简洁版.apkg"))
 
 
+def package_input_cloze() -> None:
+    folder = ROOT / "input-cloze"
+    deck = genanki.Deck(stable_id(1009), "中文::输入挖空卡")
+    model = genanki.Model(
+        stable_id(2009),
+        "输入挖空卡",
+        fields=[
+            {"name": "Text"},
+            {"name": "Back Extra"},
+        ],
+        templates=[
+            {
+                "name": "输入挖空卡",
+                "qfmt": read_text(folder / "front.html"),
+                "afmt": read_text(folder / "back.html"),
+            }
+        ],
+        css=read_text(folder / "style.css"),
+        model_type=genanki.Model.CLOZE,
+    )
+    note = genanki.Note(
+        model=model,
+        fields=[
+            "C++ 的 main 函数返回的类型是 {{c1::int}}。<br><br>在 {{c2::C 加加}} 中 {{c1::int}} 是 main 函数返回的类型。",
+            "这样可以在句中直接输入答案。",
+        ],
+    )
+    deck.add_note(note)
+    genanki.Package(deck).write_to_file(str(DIST / "输入挖空卡.apkg"))
+
+
 def package_input_single() -> None:
     folder = ROOT / "input-exact" / "single-line"
     deck = genanki.Deck(stable_id(1004), "中文::严格输入（单行）")
@@ -291,6 +322,7 @@ def main() -> None:
     package_single_choice()
     package_multiple_choice()
     package_cloze()
+    package_input_cloze()
     package_input_single()
     package_input_multi()
     package_code_completion()

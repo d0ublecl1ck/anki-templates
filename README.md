@@ -8,6 +8,8 @@
   - Basic 风格的简洁增强模板
 - `cloze-enhanced`
   - Cloze 风格的简洁增强模板
+- `input-cloze`
+  - 可在原句挖空位置直接输入的 Cloze 题类
 - `code-completion`
   - 代码补全题模板，支持多处挖空和语言高亮
 - `input-exact`

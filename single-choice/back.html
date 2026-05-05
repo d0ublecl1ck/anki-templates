@@ -27,6 +27,7 @@
   const rawAnswer = (document.querySelector(".choice-answer-raw")?.textContent || "").trim();
   const result = document.querySelector(".choice-result");
   const summary = document.querySelector(".choice-summary");
+  const fallbackStore = (window.__singleChoiceStore = window.__singleChoiceStore || {});
 
   const parseOptions = (value) =>
     value
@@ -49,9 +50,14 @@
 
   const loadChoice = () => {
     try {
-      return sessionStorage.getItem(key) || window.singleChoiceValue || "";
+      const value = sessionStorage.getItem(key) || fallbackStore[key] || "";
+      sessionStorage.removeItem(key);
+      delete fallbackStore[key];
+      return value;
     } catch (error) {
-      return window.singleChoiceValue || "";
+      const value = fallbackStore[key] || "";
+      delete fallbackStore[key];
+      return value;
     }
   };
 

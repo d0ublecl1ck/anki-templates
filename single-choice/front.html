@@ -16,6 +16,7 @@
   const key = `single-choice:${document.location.pathname}:${questionText}`;
   const rawOptions = (document.querySelector(".choice-options-raw")?.textContent || "").trim();
   const root = document.querySelector(".choice-options");
+  const fallbackStore = (window.__singleChoiceStore = window.__singleChoiceStore || {});
 
   const parseOptions = (value) =>
     value
@@ -34,21 +35,31 @@
         };
       });
 
-  const options = parseOptions(rawOptions);
+  const shuffle = (items) => {
+    const copy = [...items];
+    for (let idx = copy.length - 1; idx > 0; idx -= 1) {
+      const swapIndex = Math.floor(Math.random() * (idx + 1));
+      [copy[idx], copy[swapIndex]] = [copy[swapIndex], copy[idx]];
+    }
+    return copy;
+  };
+
+  const baseOptions = parseOptions(rawOptions);
+  const displayedOptions = shuffle(baseOptions);
 
   const save = (choice) => {
     try {
       sessionStorage.setItem(key, choice);
     } catch (error) {
-      window.singleChoiceValue = choice;
+      fallbackStore[key] = choice;
     }
   };
 
   const load = () => {
     try {
-      return sessionStorage.getItem(key) || window.singleChoiceValue || "";
+      return sessionStorage.getItem(key) || fallbackStore[key] || "";
     } catch (error) {
-      return window.singleChoiceValue || "";
+      return fallbackStore[key] || "";
     }
   };
 
@@ -60,7 +71,7 @@
     });
   };
 
-  root.innerHTML = options
+  root.innerHTML = displayedOptions
     .map(
       (option) => `
         <button
@@ -87,10 +98,10 @@
 
   document.addEventListener("keydown", (event) => {
     const index = Number.parseInt(event.key, 10) - 1;
-    if (Number.isNaN(index) || index < 0 || index >= options.length) {
+    if (Number.isNaN(index) || index < 0 || index >= displayedOptions.length) {
       return;
     }
-    const choice = options[index].label;
+    const choice = displayedOptions[index].label;
     save(choice);
     paint(choice);
   });
