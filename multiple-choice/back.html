@@ -14,13 +14,24 @@
   {{#note}}
   <div class="mc-note-block">
     <div class="mc-label">解析</div>
-    <div class="mc-note">{{note}}</div>
+    <div class="mc-note mc-rich">{{note}}</div>
   </div>
   {{/note}}
 </div>
 
 <script>
 (() => {
+  const renderCodeMarkup = (source) =>
+    source
+      .replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.trim()}</code></pre>`)
+      .replace(/`([^`\n]+)`/g, (_, code) => `<code>${code}</code>`);
+
+  const question = document.querySelector(".mc-question");
+  if (question && question.dataset.codeRendered !== "true") {
+    question.innerHTML = renderCodeMarkup(question.innerHTML);
+    question.dataset.codeRendered = "true";
+  }
+
   const questionText = (document.querySelector(".mc-question")?.textContent || "").trim();
   const key = `multiple-choice:${document.location.pathname}:${questionText}`;
   const rawOptions = (document.querySelector(".mc-options-raw")?.textContent || "").trim();
@@ -37,11 +48,17 @@
       .map((line, index) => {
         const matched = line.match(/^([A-Za-z])[\.\)\:\-、\s]+(.+)$/);
         if (matched) {
-          return { label: matched[1].toUpperCase(), text: matched[2].trim(), index };
+          return {
+            label: matched[1].toUpperCase(),
+            text: matched[2].trim(),
+            html: renderCodeMarkup(matched[2].trim()),
+            index,
+          };
         }
         return {
           label: String.fromCharCode(65 + index),
           text: line,
+          html: renderCodeMarkup(line),
           index,
         };
       });
@@ -83,7 +100,7 @@
 
   const formatChoice = (label) => {
     const option = options.find((item) => item.label === label);
-    return option ? `${option.label}. ${option.text}` : label;
+    return option ? `${option.label}. ${option.html}` : label;
   };
 
   if (!answerChoices.length) {
@@ -118,5 +135,13 @@
       <span>${userChoices.map(formatChoice).join(" / ")}</span>
     </div>
   `;
+
+  Array.from(document.querySelectorAll(".mc-rich")).forEach((block) => {
+    if (block.dataset.codeRendered === "true") {
+      return;
+    }
+    block.innerHTML = renderCodeMarkup(block.innerHTML);
+    block.dataset.codeRendered = "true";
+  });
 })();
 </script>

@@ -1,11 +1,68 @@
 <div class="cloze-shell">
-  <div class="cloze-body">{{cloze:Text}}</div>
+  <div class="cloze-body cloze-rich">{{cloze:Text}}</div>
 
   {{#Back Extra}}
   <hr class="cloze-divider" />
   <div class="cloze-section">
     <div class="cloze-label">补充说明</div>
-    <div class="cloze-extra">{{Back Extra}}</div>
+    <div class="cloze-extra cloze-rich">{{Back Extra}}</div>
   </div>
   {{/Back Extra}}
 </div>
+
+<script>
+(() => {
+  const renderClozeCodeMarkup = (source) => {
+    const tokens = source.split(/(<[^>]+>)/g).filter(Boolean);
+    let html = "";
+    let buffer = "";
+    let inCode = false;
+
+    tokens.forEach((token) => {
+      if (token.startsWith("<")) {
+        if (inCode) {
+          buffer += token;
+        } else {
+          html += token;
+        }
+        return;
+      }
+
+      const pieces = token.split("`");
+      pieces.forEach((piece, index) => {
+        if (inCode) {
+          buffer += piece;
+        } else {
+          html += piece;
+        }
+
+        if (index === pieces.length - 1) {
+          return;
+        }
+
+        if (inCode) {
+          html += `<code>${buffer}</code>`;
+          buffer = "";
+          inCode = false;
+        } else {
+          inCode = true;
+        }
+      });
+    });
+
+    if (inCode) {
+      html += `\`${buffer}`;
+    }
+
+    return html;
+  };
+
+  Array.from(document.querySelectorAll(".cloze-rich")).forEach((block) => {
+    if (block.dataset.codeRendered === "true") {
+      return;
+    }
+    block.innerHTML = renderClozeCodeMarkup(block.innerHTML);
+    block.dataset.codeRendered = "true";
+  });
+})();
+</script>

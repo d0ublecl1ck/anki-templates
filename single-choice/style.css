@@ -165,6 +165,33 @@
   color: #374151;
 }
 
+.choice-question code,
+.choice-note code,
+.choice-summary code {
+  padding: 0.14em 0.35em;
+  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.16);
+  font-size: 0.92em;
+}
+
+.choice-question pre,
+.choice-note pre,
+.choice-summary pre {
+  overflow-x: auto;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.nightMode .choice-question pre,
+.nightMode .choice-note pre,
+.nightMode .choice-summary pre,
+.card.nightMode .choice-question pre,
+.card.nightMode .choice-note pre,
+.card.nightMode .choice-summary pre {
+  background: rgba(15, 23, 42, 0.4);
+}
+
 img {
   max-width: 100%;
   height: auto;

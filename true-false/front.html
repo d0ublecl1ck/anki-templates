@@ -1,7 +1,7 @@
 <div class="tf-card">
   <div class="tf-badge">判断题</div>
 
-  <div class="tf-question">{{question}}</div>
+  <div class="tf-question tf-rich">{{question}}</div>
 
   <div class="tf-actions" role="group" aria-label="选择答案">
     <button class="tf-btn tf-btn-true" type="button" data-choice="true">正确</button>
@@ -13,6 +13,19 @@
 
 <script>
 (() => {
+  const renderCodeMarkup = (source) =>
+    source
+      .replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.trim()}</code></pre>`)
+      .replace(/`([^`\n]+)`/g, (_, code) => `<code>${code}</code>`);
+
+  Array.from(document.querySelectorAll(".tf-rich")).forEach((block) => {
+    if (block.dataset.codeRendered === "true") {
+      return;
+    }
+    block.innerHTML = renderCodeMarkup(block.innerHTML);
+    block.dataset.codeRendered = "true";
+  });
+
   const questionText = (document.querySelector(".tf-question")?.textContent || "").trim();
   const key = `tf-choice:${document.location.pathname}:${questionText}`;
   const buttons = Array.from(document.querySelectorAll(".tf-btn"));

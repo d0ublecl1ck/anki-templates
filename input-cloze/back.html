@@ -1,11 +1,204 @@
 <div class="cloze-shell">
-  <div class="cloze-body">{{cloze:Text}}</div>
+  <div class="input-cloze-raw" hidden>{{Text}}</div>
+  <div class="cloze-body cloze-rich">{{cloze:Text}}</div>
+
+  <hr class="cloze-divider" id="answer" />
+
+  <div class="input-cloze-result" aria-live="polite"></div>
+  <div class="input-cloze-list"></div>
 
   {{#Back Extra}}
-  <hr class="cloze-divider" />
   <div class="cloze-section">
     <div class="cloze-label">补充说明</div>
-    <div class="cloze-extra">{{Back Extra}}</div>
+    <div class="cloze-extra cloze-rich">{{Back Extra}}</div>
   </div>
   {{/Back Extra}}
 </div>
+
+<script>
+(() => {
+  const renderClozeCodeMarkup = (source) => {
+    const tokens = source.split(/(<[^>]+>)/g).filter(Boolean);
+    let html = "";
+    let buffer = "";
+    let inCode = false;
+
+    tokens.forEach((token) => {
+      if (token.startsWith("<")) {
+        if (inCode) {
+          buffer += token;
+        } else {
+          html += token;
+        }
+        return;
+      }
+
+      const pieces = token.split("`");
+      pieces.forEach((piece, index) => {
+        if (inCode) {
+          buffer += piece;
+        } else {
+          html += piece;
+        }
+
+        if (index === pieces.length - 1) {
+          return;
+        }
+
+        if (inCode) {
+          html += `<code>${buffer}</code>`;
+          buffer = "";
+          inCode = false;
+        } else {
+          inCode = true;
+        }
+      });
+    });
+
+    if (inCode) {
+      html += `\`${buffer}`;
+    }
+
+    return html;
+  };
+
+  const rawSource = document.querySelector(".input-cloze-raw");
+  const body = document.querySelector(".cloze-body");
+  const result = document.querySelector(".input-cloze-result");
+  const list = document.querySelector(".input-cloze-list");
+  const fallbackStore = (window.__inputClozeStore = window.__inputClozeStore || {});
+
+  if (!rawSource || !body || !result || !list) {
+    return;
+  }
+
+  const rawHtml = rawSource.innerHTML;
+  const tokenPattern = /\{\{c(\d+)::([\s\S]*?)\}\}/g;
+  const tokens = [];
+  let match;
+
+  while ((match = tokenPattern.exec(rawHtml)) !== null) {
+    tokens.push({
+      full: match[0],
+      index: Number(match[1]),
+      answerHtml: match[2],
+      hint: "",
+    });
+  }
+
+  const toVisibleText = (html) => {
+    const element = document.createElement("div");
+    element.innerHTML = html;
+    return (element.textContent || "").trim();
+  };
+
+  const escapeHtml = (value) =>
+    value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+
+  const renderDiffCharLine = (userValue, answerValue) => {
+    const maxLen = Math.max(userValue.length, answerValue.length);
+    let html = "";
+    for (let idx = 0; idx < maxLen; idx += 1) {
+      const userChar = userValue[idx] ?? "";
+      const answerChar = answerValue[idx] ?? "";
+      const shown = userChar || "·";
+      if (userChar === answerChar) {
+        html += escapeHtml(shown);
+      } else {
+        html += `<span class="diff-char">${escapeHtml(shown)}</span>`;
+      }
+    }
+    return html || "·";
+  };
+
+  const renderedAnswers = Array.from(body.querySelectorAll(".cloze")).map((node) =>
+    (node.textContent || "").trim()
+  );
+  const uniqueIndexes = [...new Set(tokens.map((token) => token.index))];
+  const activeIndex = uniqueIndexes.find((candidateIndex) => {
+    const candidateAnswers = tokens
+      .filter((token) => token.index === candidateIndex)
+      .map((token) => toVisibleText(token.answerHtml));
+    return (
+      candidateAnswers.length === renderedAnswers.length &&
+      candidateAnswers.every((answer, index) => answer === renderedAnswers[index])
+    );
+  });
+
+  const loadValues = (storageKey) => {
+    try {
+      const value = sessionStorage.getItem(storageKey);
+      sessionStorage.removeItem(storageKey);
+      if (value) {
+        return JSON.parse(value);
+      }
+    } catch (error) {
+      // Ignore and fall through to fallback store.
+    }
+
+    const fallbackValue = fallbackStore[storageKey];
+    delete fallbackStore[storageKey];
+    return Array.isArray(fallbackValue) ? fallbackValue : [];
+  };
+
+  if (activeIndex !== undefined) {
+    const promptKey = `${rawHtml}::${activeIndex}`;
+    const storageKey = `input-cloze:${document.location.pathname}:${promptKey}`;
+    const answerTokens = tokens.filter((token) => token.index === activeIndex);
+    const answers = answerTokens.map((token) => toVisibleText(token.answerHtml));
+    const userValues = loadValues(storageKey);
+    const items = answers.map((answer, index) => {
+      const userValue = typeof userValues[index] === "string" ? userValues[index] : "";
+      return { index, answer, userValue, matched: userValue === answer };
+    });
+
+    if (!items.length) {
+      result.className = "input-cloze-result is-neutral";
+      result.textContent = "未识别到当前卡片的填空位置。";
+    } else if (items.every((item) => !item.userValue)) {
+      result.className = "input-cloze-result is-neutral";
+      result.textContent = "未记录到你的输入。";
+    } else {
+      const correctCount = items.filter((item) => item.matched).length;
+      const allMatched = correctCount === items.length;
+      result.className = `input-cloze-result ${allMatched ? "is-correct" : "is-wrong"}`;
+      result.textContent = allMatched
+        ? `全部匹配，共 ${items.length} 处。`
+        : `匹配 ${correctCount} / ${items.length} 处。要求逐字符完全一致。`;
+    }
+
+    list.innerHTML = items
+      .map(
+        (item) => `
+          <div class="input-cloze-item ${item.matched ? "is-correct" : "is-wrong"}">
+            <div class="input-cloze-item-label">填空 ${item.index + 1}</div>
+            <div class="input-cloze-row">
+              <span>你的输入：</span>
+              <pre class="input-cloze-code">${renderDiffCharLine(item.userValue, item.answer)}</pre>
+            </div>
+            <div class="input-cloze-row">
+              <span>标准答案：</span>
+              <pre class="input-cloze-code">${escapeHtml(item.answer)}</pre>
+            </div>
+          </div>
+        `
+      )
+      .join("");
+  } else {
+    result.className = "input-cloze-result is-neutral";
+    result.textContent = "未识别到当前卡片的填空位置。";
+  }
+
+  Array.from(document.querySelectorAll(".cloze-rich")).forEach((block) => {
+    if (block.dataset.codeRendered === "true") {
+      return;
+    }
+    block.innerHTML = renderClozeCodeMarkup(block.innerHTML);
+    block.dataset.codeRendered = "true";
+  });
+})();
+</script>

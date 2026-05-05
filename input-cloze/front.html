@@ -6,6 +6,51 @@
 
 <script>
 (() => {
+  const renderClozeCodeMarkup = (source) => {
+    const tokens = source.split(/(<[^>]+>)/g).filter(Boolean);
+    let html = "";
+    let buffer = "";
+    let inCode = false;
+
+    tokens.forEach((token) => {
+      if (token.startsWith("<")) {
+        if (inCode) {
+          buffer += token;
+        } else {
+          html += token;
+        }
+        return;
+      }
+
+      const pieces = token.split("`");
+      pieces.forEach((piece, index) => {
+        if (inCode) {
+          buffer += piece;
+        } else {
+          html += piece;
+        }
+
+        if (index === pieces.length - 1) {
+          return;
+        }
+
+        if (inCode) {
+          html += `<code>${buffer}</code>`;
+          buffer = "";
+          inCode = false;
+        } else {
+          inCode = true;
+        }
+      });
+    });
+
+    if (inCode) {
+      html += `\`${buffer}`;
+    }
+
+    return html;
+  };
+
   const rawSource = document.querySelector(".input-cloze-raw");
   const frontBody = document.querySelector(".input-cloze-body");
   if (!rawSource || !frontBody) {
@@ -14,17 +59,21 @@
 
   const rawHtml = rawSource.innerHTML;
   const renderedText = (frontBody.textContent || "").replace(/\s+/g, " ").trim();
-  const renderedBlankCount = frontBody.querySelectorAll(".cloze").length;
-  const tokenPattern = /\{\{c(\d+)::([\s\S]*?)(?:::(.*?))?\}\}/g;
+  const renderedBlanks = Array.from(frontBody.querySelectorAll(".cloze"));
+  const renderedBlankCount = renderedBlanks.length;
+  const renderedBlankTexts = renderedBlanks.map((blank) => (blank.textContent || "").trim());
+  const tokenPattern = /\{\{c(\d+)::([\s\S]*?)\}\}/g;
   const tokens = [];
   let match;
 
   while ((match = tokenPattern.exec(rawHtml)) !== null) {
+    const tail = match[2];
+    const hint = tail.includes("::") ? tail.split("::").at(-1) || "" : "";
     tokens.push({
       full: match[0],
       index: Number(match[1]),
-      answerHtml: match[2],
-      hint: match[3] || "",
+      answerHtml: tail,
+      hint,
     });
   }
 
@@ -39,13 +88,17 @@
     return (element.textContent || "").replace(/\s+/g, " ").trim();
   };
 
-  const renderCandidateHtml = (activeIndex) =>
-    rawHtml.replace(tokenPattern, (_, index, answerHtml, hint) => {
+  const renderCandidateHtml = (activeIndex) => {
+    let blankPosition = 0;
+    return rawHtml.replace(tokenPattern, (_, index, answerHtml) => {
       if (Number(index) === activeIndex) {
-        return `<span class="cloze">${hint || "[...]"}</span>`;
+        const placeholder = renderedBlankTexts[blankPosition] || "[...]";
+        blankPosition += 1;
+        return `<span class="cloze">${placeholder}</span>`;
       }
       return answerHtml;
     });
+  };
 
   let activeIndex = null;
   for (const candidateIndex of uniqueIndexes) {
@@ -64,14 +117,21 @@
     return;
   }
 
+  if (frontBody.dataset.codeRendered !== "true") {
+    frontBody.innerHTML = renderClozeCodeMarkup(frontBody.innerHTML);
+    frontBody.dataset.codeRendered = "true";
+  }
+
   const promptKey = `${rawHtml}::${activeIndex}`;
   const storageKey = `input-cloze:${document.location.pathname}:${promptKey}`;
+  const fallbackStore = (window.__inputClozeStore = window.__inputClozeStore || {});
 
   const loadValues = () => {
     try {
       return JSON.parse(sessionStorage.getItem(storageKey) || "[]");
     } catch (error) {
-      return Array.isArray(window.__inputClozeValues) ? window.__inputClozeValues : [];
+      const fallbackValue = fallbackStore[storageKey];
+      return Array.isArray(fallbackValue) ? fallbackValue : [];
     }
   };
 
@@ -79,7 +139,7 @@
     try {
       sessionStorage.setItem(storageKey, JSON.stringify(values));
     } catch (error) {
-      window.__inputClozeValues = values;
+      fallbackStore[storageKey] = values;
     }
   };
 

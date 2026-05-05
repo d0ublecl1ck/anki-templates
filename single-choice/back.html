@@ -14,13 +14,24 @@
   {{#note}}
   <div class="choice-note-block">
     <div class="choice-label">解析</div>
-    <div class="choice-note">{{note}}</div>
+    <div class="choice-note choice-rich">{{note}}</div>
   </div>
   {{/note}}
 </div>
 
 <script>
 (() => {
+  const renderCodeMarkup = (source) =>
+    source
+      .replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.trim()}</code></pre>`)
+      .replace(/`([^`\n]+)`/g, (_, code) => `<code>${code}</code>`);
+
+  const question = document.querySelector(".choice-question");
+  if (question && question.dataset.codeRendered !== "true") {
+    question.innerHTML = renderCodeMarkup(question.innerHTML);
+    question.dataset.codeRendered = "true";
+  }
+
   const questionText = (document.querySelector(".choice-question")?.textContent || "").trim();
   const key = `single-choice:${document.location.pathname}:${questionText}`;
   const rawOptions = (document.querySelector(".choice-options-raw")?.textContent || "").trim();
@@ -37,11 +48,17 @@
       .map((line, index) => {
         const matched = line.match(/^([A-Za-z])[\.\)\:\-、\s]+(.+)$/);
         if (matched) {
-          return { label: matched[1].toUpperCase(), text: matched[2].trim(), index };
+          return {
+            label: matched[1].toUpperCase(),
+            text: matched[2].trim(),
+            html: renderCodeMarkup(matched[2].trim()),
+            index,
+          };
         }
         return {
           label: String.fromCharCode(65 + index),
           text: line,
+          html: renderCodeMarkup(line),
           index,
         };
       });
@@ -87,7 +104,7 @@
   summary.innerHTML = `
     <div class="choice-summary-row">
       <span class="choice-label">标准答案</span>
-      <span>${answerOption.label}. ${answerOption.text}</span>
+      <span>${answerOption.label}. ${answerOption.html}</span>
     </div>
   `;
 
@@ -104,8 +121,16 @@
   summary.innerHTML += `
     <div class="choice-summary-row">
       <span class="choice-label">你的选择</span>
-      <span>${choiceOption.label}. ${choiceOption.text}</span>
+      <span>${choiceOption.label}. ${choiceOption.html}</span>
     </div>
   `;
+
+  Array.from(document.querySelectorAll(".choice-rich")).forEach((block) => {
+    if (block.dataset.codeRendered === "true") {
+      return;
+    }
+    block.innerHTML = renderCodeMarkup(block.innerHTML);
+    block.dataset.codeRendered = "true";
+  });
 })();
 </script>

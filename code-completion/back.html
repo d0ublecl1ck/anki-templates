@@ -1,5 +1,5 @@
 <div class="code-shell">
-  <div class="code-prompt">{{prompt}}</div>
+  <div class="code-prompt code-rich">{{prompt}}</div>
   <div class="code-raw" hidden>{{code}}</div>
   <div class="answers-raw" hidden>{{answers}}</div>
   <div class="language-raw" hidden>{{language}}</div>
@@ -16,13 +16,26 @@
   {{#note}}
   <div class="section">
     <div class="section-title">解析</div>
-    <div class="code-note">{{note}}</div>
+    <div class="code-note code-rich">{{note}}</div>
   </div>
   {{/note}}
 </div>
 
 <script>
 (() => {
+  const renderCodeMarkup = (source) =>
+    source
+      .replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.trim()}</code></pre>`)
+      .replace(/`([^`\n]+)`/g, (_, code) => `<code>${code}</code>`);
+
+  Array.from(document.querySelectorAll(".code-rich")).forEach((block) => {
+    if (block.dataset.codeRendered === "true") {
+      return;
+    }
+    block.innerHTML = renderCodeMarkup(block.innerHTML);
+    block.dataset.codeRendered = "true";
+  });
+
   const promptText = (document.querySelector(".code-prompt")?.textContent || "").trim();
   const codeRaw = document.querySelector(".code-raw")?.textContent ?? "";
   const answersRaw = document.querySelector(".answers-raw")?.textContent ?? "";

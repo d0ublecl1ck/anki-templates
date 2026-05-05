@@ -1,5 +1,5 @@
 <div class="input-shell">
-  <div class="input-prompt">{{prompt}}</div>
+  <div class="input-prompt input-rich">{{prompt}}</div>
   <div class="input-answer-raw" hidden>{{answer}}</div>
   <div class="input-feedback-raw" hidden>{{feedback}}</div>
 
@@ -14,6 +14,19 @@
 
 <script>
 (() => {
+  const renderCodeMarkup = (source) =>
+    source
+      .replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.trim()}</code></pre>`)
+      .replace(/`([^`\n]+)`/g, (_, code) => `<code>${code}</code>`);
+
+  Array.from(document.querySelectorAll(".input-rich")).forEach((block) => {
+    if (block.dataset.codeRendered === "true") {
+      return;
+    }
+    block.innerHTML = renderCodeMarkup(block.innerHTML);
+    block.dataset.codeRendered = "true";
+  });
+
   const promptText = (document.querySelector(".input-prompt")?.textContent || "").trim();
   const storageKey = `input-exact:single:${document.location.pathname}:${promptText}`;
   const input = document.getElementById("exact-input");
@@ -22,6 +35,7 @@
   const diffPanel = document.querySelector(".input-diff-panel");
   const diffBox = document.querySelector(".input-diff");
   const feedbackEnabled = ["1", "true", "yes", "on", "开启", "即时"].includes(feedbackRaw);
+  const fallbackStore = (window.__inputExactSingleStore = window.__inputExactSingleStore || {});
 
   const escapeHtml = (value) =>
     value
@@ -54,7 +68,7 @@
     try {
       return sessionStorage.getItem(storageKey) || "";
     } catch (error) {
-      return window.__inputExactSingleValue || "";
+      return fallbackStore[storageKey] || "";
     }
   };
 
@@ -62,7 +76,7 @@
     try {
       sessionStorage.setItem(storageKey, value);
     } catch (error) {
-      window.__inputExactSingleValue = value;
+      fallbackStore[storageKey] = value;
     }
   };
 

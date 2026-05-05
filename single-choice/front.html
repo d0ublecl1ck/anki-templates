@@ -12,6 +12,17 @@
 
 <script>
 (() => {
+  const renderCodeMarkup = (source) =>
+    source
+      .replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.trim()}</code></pre>`)
+      .replace(/`([^`\n]+)`/g, (_, code) => `<code>${code}</code>`);
+
+  const question = document.querySelector(".choice-question");
+  if (question && question.dataset.codeRendered !== "true") {
+    question.innerHTML = renderCodeMarkup(question.innerHTML);
+    question.dataset.codeRendered = "true";
+  }
+
   const questionText = (document.querySelector(".choice-question")?.textContent || "").trim();
   const key = `single-choice:${document.location.pathname}:${questionText}`;
   const rawOptions = (document.querySelector(".choice-options-raw")?.textContent || "").trim();
@@ -26,11 +37,17 @@
       .map((line, index) => {
         const matched = line.match(/^([A-Za-z])[\.\)\:\-、\s]+(.+)$/);
         if (matched) {
-          return { label: matched[1].toUpperCase(), text: matched[2].trim(), index };
+          return {
+            label: matched[1].toUpperCase(),
+            text: matched[2].trim(),
+            html: renderCodeMarkup(matched[2].trim()),
+            index,
+          };
         }
         return {
           label: String.fromCharCode(65 + index),
           text: line,
+          html: renderCodeMarkup(line),
           index,
         };
       });
@@ -82,7 +99,7 @@
           data-choice="${option.label}"
         >
           <span class="choice-option-label">${option.label}</span>
-          <span class="choice-option-text">${option.text}</span>
+          <span class="choice-option-text">${option.html}</span>
         </button>
       `
     )

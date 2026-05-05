@@ -1,3 +1,24 @@
 <div class="basic-shell">
-  <div class="basic-question">{{Front}}</div>
+  <div class="basic-question basic-rich">{{Front}}</div>
 </div>
+
+<script>
+(() => {
+  const renderCode = (root) => {
+    const blocks = root.querySelectorAll(".basic-rich");
+    blocks.forEach((block) => {
+      if (block.dataset.codeRendered === "true") {
+        return;
+      }
+      const source = block.innerHTML;
+      const rendered = source
+        .replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.trim()}</code></pre>`)
+        .replace(/`([^`\n]+)`/g, (_, code) => `<code>${code}</code>`);
+      block.innerHTML = rendered;
+      block.dataset.codeRendered = "true";
+    });
+  };
+
+  renderCode(document);
+})();
+</script>

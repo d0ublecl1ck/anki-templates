@@ -13,6 +13,17 @@
 
 <script>
 (() => {
+  const renderCodeMarkup = (source) =>
+    source
+      .replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.trim()}</code></pre>`)
+      .replace(/`([^`\n]+)`/g, (_, code) => `<code>${code}</code>`);
+
+  const question = document.querySelector(".mc-question");
+  if (question && question.dataset.codeRendered !== "true") {
+    question.innerHTML = renderCodeMarkup(question.innerHTML);
+    question.dataset.codeRendered = "true";
+  }
+
   const questionText = (document.querySelector(".mc-question")?.textContent || "").trim();
   const key = `multiple-choice:${document.location.pathname}:${questionText}`;
   const rawOptions = (document.querySelector(".mc-options-raw")?.textContent || "").trim();
@@ -28,11 +39,17 @@
       .map((line, index) => {
         const matched = line.match(/^([A-Za-z])[\.\)\:\-、\s]+(.+)$/);
         if (matched) {
-          return { label: matched[1].toUpperCase(), text: matched[2].trim(), index };
+          return {
+            label: matched[1].toUpperCase(),
+            text: matched[2].trim(),
+            html: renderCodeMarkup(matched[2].trim()),
+            index,
+          };
         }
         return {
           label: String.fromCharCode(65 + index),
           text: line,
+          html: renderCodeMarkup(line),
           index,
         };
       });
@@ -100,7 +117,7 @@
           aria-pressed="false"
         >
           <span class="mc-option-label">${option.label}</span>
-          <span class="mc-option-text">${option.text}</span>
+          <span class="mc-option-text">${option.html}</span>
         </button>
       `
     )

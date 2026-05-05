@@ -3,7 +3,7 @@
     <button type="button" class="toggle-feedback" aria-pressed="false" title="切换即时差异提示"></button>
   </div>
 
-  <div class="code-prompt">{{prompt}}</div>
+  <div class="code-prompt code-rich">{{prompt}}</div>
   <div class="code-raw" hidden>{{code}}</div>
   <div class="answers-raw" hidden>{{answers}}</div>
   <div class="language-raw" hidden>{{language}}</div>
@@ -18,6 +18,19 @@
 
 <script>
 (() => {
+  const renderCodeMarkup = (source) =>
+    source
+      .replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.trim()}</code></pre>`)
+      .replace(/`([^`\n]+)`/g, (_, code) => `<code>${code}</code>`);
+
+  Array.from(document.querySelectorAll(".code-rich")).forEach((block) => {
+    if (block.dataset.codeRendered === "true") {
+      return;
+    }
+    block.innerHTML = renderCodeMarkup(block.innerHTML);
+    block.dataset.codeRendered = "true";
+  });
+
   const promptText = (document.querySelector(".code-prompt")?.textContent || "").trim();
   const codeRaw = document.querySelector(".code-raw")?.textContent ?? "";
   const answersRaw = document.querySelector(".answers-raw")?.textContent ?? "";

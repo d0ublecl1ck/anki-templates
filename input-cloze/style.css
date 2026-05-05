@@ -118,6 +118,77 @@
   opacity: 0.95;
 }
 
+.input-cloze-result {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+.input-cloze-result.is-correct {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.input-cloze-result.is-wrong {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.input-cloze-result.is-neutral {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.input-cloze-list {
+  display: grid;
+  gap: 12px;
+}
+
+.input-cloze-item {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.input-cloze-item-label {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.input-cloze-row {
+  margin-top: 8px;
+}
+
+.input-cloze-code {
+  margin: 6px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.06);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.nightMode .input-cloze-code,
+.card.nightMode .input-cloze-code {
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.diff-char {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.nightMode .diff-char,
+.card.nightMode .diff-char {
+  background: rgba(239, 68, 68, 0.22);
+  color: #fca5a5;
+}
+
 img {
   max-width: 100%;
   height: auto;

@@ -1,7 +1,28 @@
 <div class="basic-shell">
-  <div class="basic-question">{{FrontSide}}</div>
+  <div class="basic-question basic-rich">{{FrontSide}}</div>
 
   <hr class="basic-divider" id="answer" />
 
-  <div class="basic-answer">{{Back}}</div>
+  <div class="basic-answer basic-rich">{{Back}}</div>
 </div>
+
+<script>
+(() => {
+  const renderCode = (root) => {
+    const blocks = root.querySelectorAll(".basic-rich");
+    blocks.forEach((block) => {
+      if (block.dataset.codeRendered === "true") {
+        return;
+      }
+      const source = block.innerHTML;
+      const rendered = source
+        .replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.trim()}</code></pre>`)
+        .replace(/`([^`\n]+)`/g, (_, code) => `<code>${code}</code>`);
+      block.innerHTML = rendered;
+      block.dataset.codeRendered = "true";
+    });
+  };
+
+  renderCode(document);
+})();
+</script>
