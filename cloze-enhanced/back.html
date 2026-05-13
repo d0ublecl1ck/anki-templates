@@ -1,4 +1,6 @@
 <div class="cloze-shell">
+  <div class="cloze-raw" hidden>{{Text}}</div>
+  <div class="cloze-feedback" hidden>{{cloze:Text}}</div>
   <div class="cloze-body cloze-rich">{{cloze:Text}}</div>
 
   {{#Back Extra}}
@@ -12,6 +14,44 @@
 
 <script>
 (() => {
+  const rawSource = document.querySelector(".cloze-raw");
+  const feedbackSource = document.querySelector(".cloze-feedback");
+  const body = document.querySelector(".cloze-body");
+
+  const normalizeText = (value) => value.replace(/\s+/g, " ").trim();
+
+  const tokenPattern = /\{\{c(\d+)::([\s\S]*?)\}\}/g;
+
+  const parseTokens = (rawHtml) => {
+    const tokens = [];
+    let match;
+    while ((match = tokenPattern.exec(rawHtml)) !== null) {
+      tokens.push({
+        full: match[0],
+        index: Number(match[1]),
+        answerHtml: match[2],
+      });
+    }
+    return tokens;
+  };
+
+  const renderForCompare = (rawHtml, activeIndex, feedbackTexts) => {
+    let blankPosition = 0;
+    return rawHtml.replace(tokenPattern, (_, index, answerHtml) => {
+      if (Number(index) === activeIndex) {
+        const placeholder = feedbackTexts[blankPosition] || "[...]";
+        blankPosition += 1;
+        return `<span class="cloze">${placeholder}</span>`;
+      }
+      return answerHtml;
+    });
+  };
+
+  const renderForBack = (rawHtml, activeIndex) =>
+    rawHtml.replace(tokenPattern, (_, index, answerHtml) =>
+      Number(index) === activeIndex ? `<span class="cloze">${answerHtml}</span>` : answerHtml
+    );
+
   const renderClozeCodeMarkup = (source) => {
     const tokens = source.split(/(<[^>]+>)/g).filter(Boolean);
     let html = "";
@@ -56,6 +96,29 @@
 
     return html;
   };
+
+  if (rawSource && feedbackSource && body) {
+    const rawHtml = rawSource.innerHTML;
+    const feedbackHtml = feedbackSource.innerHTML;
+    const feedbackTexts = Array.from(feedbackSource.querySelectorAll(".cloze")).map((node) =>
+      (node.textContent || "").trim()
+    );
+    const feedbackText = normalizeText(feedbackSource.textContent || "");
+    const tokens = parseTokens(rawHtml);
+    const uniqueIndexes = [...new Set(tokens.map((token) => token.index))];
+    const activeIndex = uniqueIndexes.find((candidateIndex) => {
+      const candidateHtml = renderForCompare(rawHtml, candidateIndex, feedbackTexts);
+      const element = document.createElement("div");
+      element.innerHTML = candidateHtml;
+      return normalizeText(element.textContent || "") === feedbackText;
+    });
+
+    if (activeIndex !== undefined) {
+      body.innerHTML = renderForBack(rawHtml, activeIndex);
+    } else {
+      body.innerHTML = feedbackHtml;
+    }
+  }
 
   Array.from(document.querySelectorAll(".cloze-rich")).forEach((block) => {
     if (block.dataset.codeRendered === "true") {
