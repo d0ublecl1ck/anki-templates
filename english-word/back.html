@@ -1,0 +1,83 @@
+<div class="word-shell">
+  <section class="word-hero word-hero--answer">
+    <div class="word-audio">{{Audio}}</div>
+    <div class="word-label">Answer</div>
+    <div class="word-title">{{Word}}</div>
+    <div class="word-pronunciation">{{Pronunciation}}</div>
+  </section>
+
+  <section class="answer-primary">
+    <div class="field-block field-block--meaning">
+      <div class="field-label">核心释义</div>
+      <div class="field-content">{{Meaning}}</div>
+    </div>
+    <div class="field-block">
+      <div class="field-label">词性</div>
+      <div class="field-content">{{PartOfSpeech}}</div>
+    </div>
+    <div class="field-block">
+      <div class="field-label">语域</div>
+      <div class="field-content">{{Register}}</div>
+    </div>
+  </section>
+
+  <section class="example-panel">
+    <div class="example-audio">{{ExampleAudio}}</div>
+    <div class="field-label">例句</div>
+    <div class="example-text">{{Example}}</div>
+    <div class="example-meaning">{{ExampleMeaning}}</div>
+  </section>
+
+  <section class="answer-grid">
+    <div class="field-block">
+      <div class="field-label">常见搭配</div>
+      <div class="field-content">{{Collocation}}</div>
+    </div>
+    <div class="field-block">
+      <div class="field-label">近义词</div>
+      <div class="field-content">{{Synonyms}}</div>
+    </div>
+    <div class="field-block">
+      <div class="field-label">反义词</div>
+      <div class="field-content">{{Antonyms}}</div>
+    </div>
+    <div class="field-block">
+      <div class="field-label">易混点</div>
+      <div class="field-content">{{Confusable}}</div>
+    </div>
+    <div class="field-block">
+      <div class="field-label">助记</div>
+      <div class="field-content">{{Mnemonic}}</div>
+    </div>
+    <div class="field-block">
+      <div class="field-label">词源</div>
+      <div class="field-content">{{Etymology}}</div>
+    </div>
+  </section>
+
+  <section class="field-block sentence-prompt">
+    <div class="field-label">输出练习</div>
+    <div class="field-content">{{SelfSentencePrompt}}</div>
+  </section>
+
+  <section class="field-block note-panel">
+    <div class="field-label">补充</div>
+    <div class="field-content">{{Note}}</div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // 隐藏未填写的信息区块，让完整词条和暂缺字段的词条都保持清晰版式。
+  const hideEmptyBlocks = (root) => {
+    root.querySelectorAll(".field-block, .example-panel, .word-pronunciation, .word-audio, .example-audio").forEach((node) => {
+      const hasMedia = Boolean(node.querySelector("audio, a"));
+      if (!node.textContent.trim() && !hasMedia) {
+        node.classList.add("is-empty");
+      }
+    });
+  };
+
+  hideEmptyBlocks(document);
+})();
+</script>

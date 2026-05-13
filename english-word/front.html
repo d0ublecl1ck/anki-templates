@@ -1,0 +1,29 @@
+<div class="word-shell">
+  <section class="word-hero">
+    <div class="word-audio">{{Audio}}</div>
+    <div class="word-label">Word</div>
+    <div class="word-title">{{Word}}</div>
+    <div class="word-pronunciation">{{Pronunciation}}</div>
+  </section>
+
+  <section class="word-recall">
+    <div class="recall-item">回忆核心中文义</div>
+    <div class="recall-item">回忆词性和常见搭配</div>
+    <div class="recall-item">尝试想起一个自然例句</div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // 隐藏未填写的音频或音标区域，保证批量导入时空字段不会留下空白占位。
+  const hideEmptyBlocks = (root) => {
+    root.querySelectorAll(".word-pronunciation, .word-audio").forEach((node) => {
+      if (!node.textContent.trim() && !node.querySelector("audio, a")) {
+        node.classList.add("is-empty");
+      }
+    });
+  };
+
+  hideEmptyBlocks(document);
+})();
+</script>
